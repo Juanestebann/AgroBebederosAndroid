@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Solo la variante debug admite el backend HTTP del emulador o de la red local. -->
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

@@ -1,0 +1,32 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Android Studio
+.idea/workspace.xml
+.idea/caches/
+.idea/modules.xml
+.idea/deploymentTargetSelector.xml
+.idea/assetWizardSettings.xml
+
+# Local configuration
+local.properties
+
+# Compilación
+*.apk
+*.aab
+
+# Firma release: las claves y propiedades privadas nunca se versionan.
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+release.properties
+
+# Kotlin
+*.class
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
