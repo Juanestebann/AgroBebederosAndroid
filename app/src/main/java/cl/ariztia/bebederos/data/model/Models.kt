@@ -1,5 +1,9 @@
 package cl.ariztia.bebederos.data.model
 
+import java.math.BigDecimal
+import java.time.OffsetDateTime
+import java.util.UUID
+
 /** Roles disponibles en la sesión demostrativa local. */
 enum class UserRole { OPERARIO, SUPERVISOR }
 
@@ -34,6 +38,115 @@ data class DemoUser(
     val name: String,
     val role: UserRole,
     val farm: String
+)
+
+/** Usuario autenticado por el backend. La contraseña nunca forma parte de la sesión. */
+data class SessionUser(
+    val id: Long,
+    val email: String,
+    val name: String,
+    val role: UserRole,
+    val farmId: Long?,
+    val farm: String?
+)
+
+/** Granja obtenida del backend; su identificador nunca se convierte a `Int`. */
+data class RemoteFarm(
+    val id: Long,
+    val name: String
+)
+
+/** Galpón remoto con la relación de granja informada por Spring Boot. */
+data class RemoteShed(
+    val id: Long,
+    val farmId: Long,
+    val name: String,
+    val farmName: String
+)
+
+/**
+ * Línea remota cuya temperatura, estado, origen y fecha son autoritativos del backend.
+ */
+data class RemoteWaterLine(
+    val id: Long,
+    val farmId: Long,
+    val farmName: String,
+    val shedId: Long,
+    val shedName: String,
+    val name: String,
+    val temperatureC: BigDecimal,
+    val status: TemperatureStatus,
+    val temperatureOrigin: String,
+    val registeredAt: OffsetDateTime
+)
+
+/** Alerta térmica activa entregada por Spring Boot para el alcance de la sesión. */
+data class RemoteAlert(
+    val id: Long,
+    val lineId: Long,
+    val lineName: String,
+    val shedId: Long,
+    val shedName: String,
+    val farmId: Long,
+    val farmName: String,
+    val temperatureC: BigDecimal,
+    val status: TemperatureStatus,
+    val generatedAt: OffsetDateTime
+)
+
+/** Jerarquía remota completa cargada para el alcance del usuario autenticado. */
+data class RemoteCatalog(
+    val farms: List<RemoteFarm>,
+    val sheds: List<RemoteShed>,
+    val lines: List<RemoteWaterLine>
+) {
+    fun farm(id: Long): RemoteFarm? = farms.firstOrNull { it.id == id }
+    fun shed(id: Long): RemoteShed? = sheds.firstOrNull { it.id == id }
+    fun line(id: Long): RemoteWaterLine? = lines.firstOrNull { it.id == id }
+    fun shedsForFarm(farmId: Long): List<RemoteShed> = sheds.filter { it.farmId == farmId }
+    fun linesForShed(shedId: Long): List<RemoteWaterLine> = lines.filter { it.shedId == shedId }
+    fun linesForFarm(farmId: Long): List<RemoteWaterLine> = lines.filter { it.farmId == farmId }
+
+    /** Sustituye una línea solo si el detalle conserva la jerarquía ya cargada. */
+    fun withUpdatedLine(updated: RemoteWaterLine): RemoteCatalog? {
+        val index = lines.indexOfFirst { it.id == updated.id }
+        if (index < 0) return null
+        val previous = lines[index]
+        if (previous.farmId != updated.farmId || previous.shedId != updated.shedId) return null
+
+        return copy(lines = lines.toMutableList().apply { set(index, updated) })
+    }
+}
+
+/** Registro canónico de flushing recibido desde PostgreSQL mediante Spring Boot. */
+data class RemoteFlushing(
+    val id: Long,
+    val lineId: Long,
+    val lineName: String,
+    val shedId: Long,
+    val shedName: String,
+    val farmId: Long,
+    val farmName: String,
+    val operatorId: Long,
+    val operatorName: String,
+    val registeredAt: OffsetDateTime,
+    val reason: String,
+    val observation: String?,
+    val completed: Boolean,
+    val beforeTemperatureC: BigDecimal,
+    val afterTemperatureC: BigDecimal,
+    val clientOperationId: UUID,
+    val version: Long
+)
+
+/** Metadatos canónicos de una fotografía asociada a un flushing remoto. */
+data class RemotePhoto(
+    val id: Long,
+    val flushingId: Long,
+    val originalName: String,
+    val contentType: String,
+    val sizeBytes: Long,
+    val createdAt: OffsetDateTime
 )
 
 /** Granja del catálogo demostrativo y referencias declaradas a sus galpones. */
